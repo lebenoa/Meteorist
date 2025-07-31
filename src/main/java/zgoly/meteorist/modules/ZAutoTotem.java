@@ -10,12 +10,14 @@ import meteordevelopment.meteorclient.utils.player.InvUtils;
 import meteordevelopment.meteorclient.utils.player.PlayerUtils;
 import meteordevelopment.orbit.EventHandler;
 import meteordevelopment.orbit.EventPriority;
+import net.minecraft.client.input.Input;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityStatuses;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.item.Items;
 import net.minecraft.network.packet.s2c.play.EntityStatusS2CPacket;
 
+import net.minecraft.util.math.Vec2f;
 import zgoly.meteorist.Meteorist;
 
 public class ZAutoTotem extends Module {
@@ -108,7 +110,7 @@ public class ZAutoTotem extends Module {
                 if (onlyInInventory.get() && mc.currentScreen == null) return;
 
                 // If the "only when still" option is enabled and the player is moving, do not move
-                if (onlyWhenStill.get() && (mc.player.input.movementForward != 0 || mc.player.input.movementSideways != 0)) return;
+                if (onlyWhenStill.get() && mc.player.input.getMovementInput().lengthSquared() > 1.0E-5F) return;
 
                 // If all checks pass, move the totem to the offhand
                 InvUtils.move().from(result.slot()).toOffhand();

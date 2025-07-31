@@ -1,14 +1,17 @@
 package zgoly.meteorist.modules;
 
 import meteordevelopment.meteorclient.events.world.TickEvent;
-import meteordevelopment.meteorclient.settings.IntSetting;
-import meteordevelopment.meteorclient.settings.Setting;
-import meteordevelopment.meteorclient.settings.SettingGroup;
-import meteordevelopment.meteorclient.settings.StringSetting;
+import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.player.ChatUtils;
 import meteordevelopment.orbit.EventHandler;
+import net.minecraft.entity.player.HungerManager;
 import zgoly.meteorist.Meteorist;
+
+enum Mode {
+    HUNGER,
+    SATURATION,
+}
 
 public class AutoFeed extends Module {
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
@@ -20,9 +23,16 @@ public class AutoFeed extends Module {
             .build()
     );
 
-    private final Setting<Integer> hungerLevel = sgGeneral.add(new IntSetting.Builder()
-            .name("hunger-level")
-            .description("Hunger level at which to send the command.")
+    private final Setting<Mode> mode = sgGeneral.add(new EnumSetting.Builder<Mode>()
+            .name("mode")
+            .description("What threshold to check for")
+            .defaultValue(Mode.HUNGER)
+            .build()
+    );
+
+    private final Setting<Integer> threshold = sgGeneral.add(new IntSetting.Builder()
+            .name("level")
+            .description("Hunger/Saturation level at which to send the command.")
             .defaultValue(12)
             .min(1)
             .sliderRange(1, 20)
@@ -41,7 +51,7 @@ public class AutoFeed extends Module {
     private int timer;
 
     public AutoFeed() {
-        super(Meteorist.CATEGORY, "auto-feed", "Writes command in chat when hunger level is low.");
+        super(Meteorist.CATEGORY, "auto-feed", "Writes command in chat when hunger/saturation level is low.");
     }
 
     @Override
@@ -51,8 +61,24 @@ public class AutoFeed extends Module {
 
     @EventHandler
     private void onTick(TickEvent.Post event) {
-        if (timer >= delay.get() && mc.player.getHungerManager().getFoodLevel() <= hungerLevel.get()) {
-            ChatUtils.sendPlayerMsg(feedCommand.get());
+        if (timer >= delay.get()) {
+            HungerManager hungerManager = mc.player.getHungerManager();
+            Mode mode = this.mode.get();
+            switch (mode) {
+                case Mode.HUNGER:
+                    if (hungerManager.getFoodLevel() < threshold.get()) {
+                        ChatUtils.sendPlayerMsg(feedCommand.get());
+                    }
+                    break;
+                case Mode.SATURATION:
+                    if (hungerManager.getSaturationLevel() < threshold.get()) {
+                        ChatUtils.sendPlayerMsg(feedCommand.get());
+                    }
+                    break;
+                default:
+                    ChatUtils.sendPlayerMsg(feedCommand.get());
+                    break;
+            }
             timer = 0;
         } else timer++;
     }
